@@ -52,7 +52,7 @@ export const signinUser: RequestHandler = async (req, res, next) => {
 
     // 토큰 생성
     const token = jwt.sign(
-      { name: user.name, email: user.email, user: user.id },
+      { name: user.name, email: user.email, userId: user.id },
       JWT_KEY,
       {
         expiresIn: "7d",
