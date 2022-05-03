@@ -3,6 +3,7 @@ import User from "../model/User";
 import bcrypt from "bcrypt"; // 비밀번호 암호화 라이브러리
 import jwt from "jsonwebtoken";
 import { RequestHandler } from "express";
+import { JWT_KEY } from "./../config/index";
 import createHttpError, { InternalServerError } from "http-errors";
 
 export const signupUser: RequestHandler = async (req, res, next) => {
@@ -45,11 +46,24 @@ export const signinUser: RequestHandler = async (req, res, next) => {
     // 유저가 입력한 비밀번호와, 데이터베이스에 있는 비밀번호 비교
     const isValidPassword = await bcrypt.compare(password, user.password);
 
+    // 비밀번호가 맞지 않다면?
     if (!isValidPassword)
       return next(createHttpError(401, "비밀번호가 맞지 않습니다."));
 
+    // 토큰 생성
+    const token = jwt.sign(
+      { name: user.name, email: user.email, user: user.id },
+      JWT_KEY,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    // 발급된 토큰 클라이언트에 쿠키로 전달
+    res.cookie("jwt", token);
+
     // 응답 메세지
-    res.json({ message: "로그인이 완료되었습니다." });
+    res.json({ naem: user.name, token });
   } catch (error) {
     return next(InternalServerError); // InternalServerError : 서버 에러를 총칭
   }
@@ -65,7 +79,7 @@ export const signinUser: RequestHandler = async (req, res, next) => {
 */
 
 /*
-  *bcrypt.compare(비교해볼 문자열, 해시값, callback): 비교해주는 메서드
+  *bcrypt.compare(비교해볼 문자열, 해시값, callback): 비교해주는 메서드 반환값 boolean
 
   compare()의 첫번째 인자: 사용자가 입력한 해시값
   compare()의 두번째 인자: 데이터베이스에 저장된 해시값
